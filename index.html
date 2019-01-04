@@ -9,6 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <link href="https://cdn.bootcss.com/normalize/8.0.1/normalize.min.css" rel="stylesheet">
+    <link href="https://cdn.bootcss.com/twitter-bootstrap/4.2.1/css/bootstrap.min.css" rel="stylesheet">
     <style></style>
 </head>
 
@@ -183,25 +184,27 @@
                     <fieldset>
                         <legend>薪资情况</legend>
 
-                        <p>
+                        <div className="form-group">
                             <label htmlFor="MonthlySalary">每月应发工资</label>
-                            <input type="number" name="MonthlySalary" step="0.01" placeholder="每月应发工资" defaultValue="10000"/>
+                            <input className="form-control" type="number" name="MonthlySalary" step="0.01" placeholder="每月应发工资" defaultValue="10000" />
+                        </div>
 
+                        <div className="form-group">
                             <label htmlFor="MonthlyDeducted">每月减除费用</label>
-                            <input type="number" name="MonthlyDeducted" step="0.01" placeholder="每月减除费用" value={pitMonthlyDeducted} readOnly />
-                        </p>
+                            <input className="form-control" type="number" name="MonthlyDeducted" step="0.01" placeholder="每月减除费用" value={pitMonthlyDeducted} />
+                        </div>
 
-                        <p>
+                        <div className="form-group">
                             <label htmlFor="MonthlySpecialDeducted">三险一金等专项扣除</label>
-                            <input type="number" name="MonthlySpecialDeducted" step="0.01" placeholder="三险一金等专项扣除" defaultValue="1500" />
+                            <input className="form-control" type="number" name="MonthlySpecialDeducted" step="0.01" placeholder="三险一金等专项扣除" defaultValue="1500" />
+                        </div>
 
+                        <div className="form-group">
                             <label htmlFor="MonthlySixSpecialDeducted">6大项等专项扣除</label>
-                            <input type="number" name="MonthlySixSpecialDeducted" step="0.01" placeholder="6大项等专项扣除" defaultValue="1000" />
-                        </p>
+                            <input className="form-control" type="number" name="MonthlySixSpecialDeducted" step="0.01" placeholder="6大项等专项扣除" defaultValue="1000" />
+                        </div>
 
-                        <p>
-                            <button type="submit">计算</button>
-                        </p>
+                        <button type="submit" class="btn btn-primary">计算</button>
                     </fieldset>
                 </form>
             );
@@ -263,18 +266,18 @@
             const { result } = this.state;
 
             return (
-                <table border="1">
-                    <thead>
+                <table className="table">
+                    <thead className="thead-dark">
                         <tr>
-                            <th>月份</th>
-                            <th>应缴税</th>
+                            <th scope="col">月份</th>
+                            <th scope="col">应缴税</th>
                         </tr>
                     </thead>
                     <tbody>
                         {
                             result.map(({ month, pit }) => (
                                 <tr>
-                                    <td>{month}</td>
+                                    <th scope="row">{month}</th>
                                     <td>{pit}</td>
                                 </tr>
                             ))
@@ -293,24 +296,18 @@
                 );
             }
 
-            const styles = {
-                csv: {},
-                table: {},
-            };
-
-            Object.assign(styles[tab], {
-                color: 'red',
-                textDecoration: 'none',
-                cursor: 'default',
-            });
-
             return (
                 <fieldset>
                     <legend>缴税结果</legend>
 
-                    <a href="javascript:void(null);" onClick={this.showCSVResult} style={styles.csv}>CSV</a>
-                    {` | `}
-                    <a href="javascript:void(null);" onClick={this.showTableResult} style={styles.table}>表格</a>
+                    <ul className="nav nav-tabs">
+                        <li className="nav-item">
+                            <a className={`nav-link ${tab === 'table' ? 'active' : ''}`} href="javascript:void(null);" onClick={this.showTableResult}>表格</a>
+                        </li>
+                        <li className="nav-item">
+                            <a className={`nav-link ${tab === 'csv' ? 'active' : ''}`} href="javascript:void(null);" onClick={this.showCSVResult}>CSV</a>
+                        </li>
+                    </ul>
 
                     <br />
 
@@ -322,7 +319,7 @@
 
         render() {
             return (
-                <div>
+                <div className="container">
                     <Form onSubmit={this.handleSubmit} />
                     <br />
                     {this.renderResult()}
@@ -334,10 +331,32 @@
 
 
     const App = () => (
-        <div>
-            <h1>2019年个人所得税计算器</h1>
-            <PitCalc />
-        </div>
+        <React.Fragment>
+            <nav className="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+                <a className="navbar-brand" href="https://wxqee.github.io/2019-CN-PIT/">2019 中国 薪资个税计算器（简版）</a>
+                <button className="navbar-toggler" type="button" data-toggle="collapse"
+                        data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false"
+                        aria-label="Toggle navigation">
+                    <span className="navbar-toggler-icon">&nbsp;</span>
+                </button>
+
+                <div className="collapse navbar-collapse" id="navbarsExampleDefault">
+                    <ul className="navbar-nav mr-auto">
+                        <li className="nav-item active">
+                            <a className="nav-link" href="https://wxqee.github.io/2019-CN-PIT/">Home <span className="sr-only">(current)</span></a>
+                        </li>
+                        <li className="nav-item">
+                            <a className="nav-link" href="https://github.com/wxqee/2019-CN-PIT">Github</a>
+                        </li>
+                    </ul>
+\                </div>
+            </nav>
+
+            <main role="main">
+                <h1>2019年个人所得税计算器</h1>
+                <PitCalc />
+            </main>
+        </React.Fragment>
     );
 
     ReactDOM.render(
