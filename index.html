@@ -124,32 +124,49 @@
         }
 
         pitByMonth(month) {
-            console.log('Entry PITCalculator.pitByMonth');
-            console.log(`arg month=${month}`);
-
-            // TODO:
             const n1 = this.n1ByMonth(month);
             const { rate, quickCalculateDeducting } = this.pitForm.getLevelMeta(n1);
-
-            console.log(`rate => ${rate}; quickCalculateDeducting => ${quickCalculateDeducting}`);
-
             const pitHistoryAmount = [...Array(month - 1).keys()]
                 .map(m => m + 1)
                 .reduce((amount, m) => amount + this.pitByMonth(m), 0);
 
+            console.log(`[${month}] rate => ${rate}`);
+            console.log(`[${month}] quickCalculateDeducting => ${quickCalculateDeducting}`);
             console.log(`[${month}] pitHistoryAmount => ${pitHistoryAmount}`);
 
             return n1 * rate - quickCalculateDeducting - pitHistoryAmount;
         }
+
+        calculate() {
+            const months = [...Array(12).keys()].map(m => m + 1);
+
+            return months.map(month => ({
+                month,
+                pit: Number.parseFloat(this.pitByMonth(month).toFixed(2)),
+            }));
+        }
     }
 
-    const Form = ({ onSubmit }) => {
-        let form = null;
+    class Form extends React.Component {
 
-        const handleSubmit = function handleSubmit(e) {
+        form = null;
+
+        componentWillMount() {
+            this.setForm = this.setForm.bind(this);
+            this.handleSubmit = this.handleSubmit.bind(this);
+        }
+
+        setForm(ref) {
+            this.form = ref;
+        }
+
+        handleSubmit(e) {
             e.preventDefault();
 
-            const formValues = $(form).serializeArray().reduce((reducer, field) => ({...reducer, [field.name]: Number.parseFloat(field.value) }), {});
+            const { onSubmit } = this.props;
+            const formValues = $(this.form)
+                .serializeArray()
+                .reduce((reducer, field) => ({...reducer, [field.name]: Number.parseFloat(field.value) }), {});
 
             console.log(`formValues => ${JSON.stringify(formValues)}`);
 
@@ -158,58 +175,56 @@
             }
 
             return false;
-        };
+        }
 
-        const setForm = ref => {
-            form = ref;
-        };
+        render() {
+            return (
+                <form ref={this.setForm} onSubmit={this.handleSubmit}>
+                    <fieldset>
+                        <legend>薪资情况</legend>
 
-        return (
-            <form className="uk-form" ref={setForm} onSubmit={handleSubmit}>
-                <fieldset data-uk-margin>
-                    <legend>薪资情况</legend>
+                        <p>
+                            <label htmlFor="MonthlySalary">每月应发工资</label>
+                            <input type="number" name="MonthlySalary" step="0.01" placeholder="每月应发工资" defaultValue="10000"/>
 
-                    <p>
-                        <label htmlFor="MonthlySalary">每月应发工资</label>
-                        <input type="number" name="MonthlySalary" placeholder="每月应发工资" defaultValue="10000"/>
+                            <label htmlFor="MonthlyDeducted">每月减除费用</label>
+                            <input type="number" name="MonthlyDeducted" step="0.01" placeholder="每月减除费用" value={pitMonthlyDeducted} readOnly />
+                        </p>
 
-                        <label htmlFor="MonthlyDeducted">每月减除费用</label>
-                        <input type="number" name="MonthlyDeducted" placeholder="每月减除费用" value={pitMonthlyDeducted} readOnly />
-                    </p>
+                        <p>
+                            <label htmlFor="MonthlySpecialDeducted">三险一金等专项扣除</label>
+                            <input type="number" name="MonthlySpecialDeducted" step="0.01" placeholder="三险一金等专项扣除" defaultValue="1500" />
 
-                    <p>
-                        <label htmlFor="MonthlySpecialDeducted">三险一金等专项扣除</label>
-                        <input type="number" name="MonthlySpecialDeducted" placeholder="三险一金等专项扣除" defaultValue="1500" />
+                            <label htmlFor="MonthlySixSpecialDeducted">6大项等专项扣除</label>
+                            <input type="number" name="MonthlySixSpecialDeducted" step="0.01" placeholder="6大项等专项扣除" defaultValue="1000" />
+                        </p>
 
-                        <label htmlFor="MonthlySixSpecialDeducted">6大项等专项扣除</label>
-                        <input type="number" name="MonthlySixSpecialDeducted" placeholder="6大项等专项扣除" defaultValue="1000" />
-                    </p>
-
-                    <p>
-                        <button className="uk-button" type="submit">计算</button>
-                    </p>
-                </fieldset>
-            </form>
-        );
-    };
+                        <p>
+                            <button type="submit">计算</button>
+                        </p>
+                    </fieldset>
+                </form>
+            );
+        }
+    }
 
 
     class PitCalc extends React.Component {
 
         state = {
-            calc: null,
+            result: null,
+            tab: 'table',
         };
 
         componentWillMount() {
             this.handleSubmit = this.handleSubmit.bind(this);
+            this.showResult = this.showResult.bind(this);
+            this.showCSVResult = this.showCSVResult.bind(this);
+            this.showTableResult = this.showTableResult.bind(this);
         }
 
         handleSubmit(values) {
             const { MonthlySalary, MonthlySpecialDeducted, MonthlySixSpecialDeducted } = values;
-
-            if (calc) {
-                delete this.state.calc;
-            }
 
             const calc = new PITCalculator(
                 pitDeductInAdvanceForm1,
@@ -217,33 +232,100 @@
                 MonthlySpecialDeducted,
                 MonthlySixSpecialDeducted,
             );
+            const result = calc.calculate();
 
-            this.setState({ calc });
+            this.setState({ result });
+        }
+
+        showResult(tab) {
+            console.log(`tag => ${tab}`);
+            this.setState({ tab });
+        }
+
+        showCSVResult() {
+            this.showResult('csv');
+        }
+
+        showTableResult() {
+            this.showResult('table');
         }
 
         renderPreText() {
-            const { calc } = this.state;
-
-            if (!calc) {
-                return null;
-            }
-
-            const months = [...Array(12).keys()].map(m => m + 1);
-            console.log(`months => ${months}`);
+            const { result } = this.state;
 
             return [
                 '月份,应缴税\n',
-                ...months.map(month => (
-                    `${month},${calc.pitByMonth(month)}\n`
-                ))
+                ...result.map(({ month, pit }) => `${month},${pit}\n`)
             ];
+        }
+
+        renderPreTable() {
+            const { result } = this.state;
+
+            return (
+                <table border="1">
+                    <thead>
+                        <tr>
+                            <th>月份</th>
+                            <th>应缴税</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {
+                            result.map(({ month, pit }) => (
+                                <tr>
+                                    <td>{month}</td>
+                                    <td>{pit}</td>
+                                </tr>
+                            ))
+                        }
+                    </tbody>
+                </table>
+            );
+        }
+
+        renderResult() {
+            const { result, tab } = this.state;
+
+            if (!Array.isArray(result)) {
+                return (
+                    <div>没有结果</div>
+                );
+            }
+
+            const styles = {
+                csv: {},
+                table: {},
+            };
+
+            Object.assign(styles[tab], {
+                color: 'red',
+                textDecoration: 'none',
+                cursor: 'default',
+            });
+
+            return (
+                <fieldset>
+                    <legend>缴税结果</legend>
+
+                    <a href="javascript:void(null);" onClick={this.showCSVResult} style={styles.csv}>CSV</a>
+                    {` | `}
+                    <a href="javascript:void(null);" onClick={this.showTableResult} style={styles.table}>表格</a>
+
+                    <br />
+
+                    {tab === 'csv' ? <pre>{this.renderPreText()}</pre> : null}
+                    {tab === 'table' ? this.renderPreTable() : null}
+                </fieldset>
+            );
         }
 
         render() {
             return (
                 <div>
                     <Form onSubmit={this.handleSubmit} />
-                    <pre>{this.renderPreText()}</pre>
+                    <br />
+                    {this.renderResult()}
                 </div>
             );
         }
