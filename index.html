@@ -1,0 +1,273 @@
+<!doctype html>
+<html class="no-js" lang="">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>2019年个人所得税计算器（H5简版）</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link href="https://cdn.bootcss.com/normalize/8.0.1/normalize.min.css" rel="stylesheet">
+    <style></style>
+</head>
+
+<body>
+
+
+
+<!--[if lte IE 9]>
+<p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade
+    your browser</a> to improve your experience and security.</p>
+<![endif]-->
+
+
+
+
+<!-- Add your site or application content here -->
+<div id="root"></div>
+
+
+
+
+<script src="https://cdn.bootcss.com/modernizr/2010.07.06dev/modernizr.min.js"></script>
+<script src="https://cdn.bootcss.com/react/16.7.0-alpha.2/umd/react.production.min.js"></script>
+<script src="https://cdn.bootcss.com/react-dom/16.7.0-alpha.2/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+<script src="https://cdn.bootcss.com/babel-standalone/7.0.0-beta.3/babel.min.js"></script>
+
+
+<!-- Add your main logic here. -->
+<script type="text/babel">
+
+    // ------------------------------------------------------------
+    // Data
+    // ------------------------------------------------------------
+    // PIT => PersonalIncomeTax
+
+    class PITDeductInAdvanceRow {
+
+        level = 0;
+
+        rate = 0;
+
+        quickCalculateDeducting = 0;
+
+        validate = () => false;
+
+        constructor(level, rate, quickCalculateDeducting, validate) {
+            this.level = level;
+            this.rate = rate;
+            this.quickCalculateDeducting = quickCalculateDeducting;
+            this.validate = validate;
+        }
+
+    }
+
+
+    class PITDeductInAdvanceForm {
+        levels = [];
+
+        add(level) {
+            this.levels.push(level);
+        }
+
+        getLevelMeta(money) {
+            const levelMeta = this.levels.find(lvl => lvl.validate(money));
+
+            console.log(`got: rate => ${levelMeta.rate}, level => ${levelMeta.level} (as money is ${money})`);
+
+            return levelMeta;
+        }
+
+        toJSON() {
+            return JSON.stringify(this.levels);
+        }
+    }
+
+    const pitDeductInAdvanceForm1 = new PITDeductInAdvanceForm(); // 个人所得税预扣率表一
+    const pitMonthlyDeducted = 5000; // 每月减除费用
+
+    pitDeductInAdvanceForm1.add(new PITDeductInAdvanceRow(1, 0.03, 0, m => m <= 36000));
+    pitDeductInAdvanceForm1.add(new PITDeductInAdvanceRow(2, 0.10, 2520, m => m > 36000 || m <= 144000));
+    pitDeductInAdvanceForm1.add(new PITDeductInAdvanceRow(3, 0.20, 16829, m => m > 144000 || m <= 300000));
+    pitDeductInAdvanceForm1.add(new PITDeductInAdvanceRow(4, 0.25, 31920, m => m > 300000 || m <= 420000));
+    pitDeductInAdvanceForm1.add(new PITDeductInAdvanceRow(5, 0.30, 52920, m => m > 420000 || m <= 660000));
+    pitDeductInAdvanceForm1.add(new PITDeductInAdvanceRow(6, 0.35, 85920, m => m > 660000 || m <= 960000));
+    pitDeductInAdvanceForm1.add(new PITDeductInAdvanceRow(7, 0.45, 181920, m => m > 960000));
+
+    console.log(`pitDeductInAdvanceForm1 => ${pitDeductInAdvanceForm1.toJSON()}`);
+
+
+    class PITCalculator {
+
+        pitForm = null;
+
+        moneyMonthlySalary = 0;
+
+        moneyMonthlyDeducted = pitMonthlyDeducted;
+
+        moneyMonthlySpecialDeducted = 0;
+
+        moneyMonthlySixSpecialDeducted = 0;
+
+        constructor(form, moneyMonthlySalary, moneyMonthlySpecialDeducted, moneyMonthlySixSpecialDeducted) {
+            this.pitForm = form;
+            this.moneyMonthlySalary = moneyMonthlySalary;
+            this.moneyMonthlySpecialDeducted = moneyMonthlySpecialDeducted;
+            this.moneyMonthlySixSpecialDeducted = moneyMonthlySixSpecialDeducted;
+        }
+
+        n1ByMonth(month) {
+            const n1 = (this.moneyMonthlySalary*month)-(this.moneyMonthlyDeducted*month)-(this.moneyMonthlySpecialDeducted*month)-(this.moneyMonthlySixSpecialDeducted*month);
+            return Number.parseFloat(n1.toFixed(3));
+        }
+
+        pitByMonth(month) {
+            console.log('Entry PITCalculator.pitByMonth');
+            console.log(`arg month=${month}`);
+
+            // TODO:
+            const n1 = this.n1ByMonth(month);
+            const { rate, quickCalculateDeducting } = this.pitForm.getLevelMeta(n1);
+
+            console.log(`rate => ${rate}; quickCalculateDeducting => ${quickCalculateDeducting}`);
+
+            const pitHistoryAmount = [...Array(month - 1).keys()]
+                .map(m => m + 1)
+                .reduce((amount, m) => amount + this.pitByMonth(m), 0);
+
+            console.log(`[${month}] pitHistoryAmount => ${pitHistoryAmount}`);
+
+            return n1 * rate - quickCalculateDeducting - pitHistoryAmount;
+        }
+    }
+
+    const Form = ({ onSubmit }) => {
+        let form = null;
+
+        const handleSubmit = function handleSubmit(e) {
+            e.preventDefault();
+
+            const formValues = $(form).serializeArray().reduce((reducer, field) => ({...reducer, [field.name]: Number.parseFloat(field.value) }), {});
+
+            console.log(`formValues => ${JSON.stringify(formValues)}`);
+
+            if (typeof onSubmit === 'function') {
+                onSubmit(formValues);
+            }
+
+            return false;
+        };
+
+        const setForm = ref => {
+            form = ref;
+        };
+
+        return (
+            <form className="uk-form" ref={setForm} onSubmit={handleSubmit}>
+                <fieldset data-uk-margin>
+                    <legend>薪资情况</legend>
+
+                    <p>
+                        <label htmlFor="MonthlySalary">每月应发工资</label>
+                        <input type="number" name="MonthlySalary" placeholder="每月应发工资" defaultValue="10000"/>
+
+                        <label htmlFor="MonthlyDeducted">每月减除费用</label>
+                        <input type="number" name="MonthlyDeducted" placeholder="每月减除费用" value={pitMonthlyDeducted} readOnly />
+                    </p>
+
+                    <p>
+                        <label htmlFor="MonthlySpecialDeducted">三险一金等专项扣除</label>
+                        <input type="number" name="MonthlySpecialDeducted" placeholder="三险一金等专项扣除" defaultValue="1500" />
+
+                        <label htmlFor="MonthlySixSpecialDeducted">6大项等专项扣除</label>
+                        <input type="number" name="MonthlySixSpecialDeducted" placeholder="6大项等专项扣除" defaultValue="1000" />
+                    </p>
+
+                    <p>
+                        <button className="uk-button" type="submit">计算</button>
+                    </p>
+                </fieldset>
+            </form>
+        );
+    };
+
+
+    class PitCalc extends React.Component {
+
+        state = {
+            calc: null,
+        };
+
+        componentWillMount() {
+            this.handleSubmit = this.handleSubmit.bind(this);
+        }
+
+        handleSubmit(values) {
+            const { MonthlySalary, MonthlySpecialDeducted, MonthlySixSpecialDeducted } = values;
+
+            if (calc) {
+                delete this.state.calc;
+            }
+
+            const calc = new PITCalculator(
+                pitDeductInAdvanceForm1,
+                MonthlySalary,
+                MonthlySpecialDeducted,
+                MonthlySixSpecialDeducted,
+            );
+
+            this.setState({ calc });
+        }
+
+        renderPreText() {
+            const { calc } = this.state;
+
+            if (!calc) {
+                return null;
+            }
+
+            const months = [...Array(12).keys()].map(m => m + 1);
+            console.log(`months => ${months}`);
+
+            return [
+                '月份,应缴税\n',
+                ...months.map(month => (
+                    `${month},${calc.pitByMonth(month)}\n`
+                ))
+            ];
+        }
+
+        render() {
+            return (
+                <div>
+                    <Form onSubmit={this.handleSubmit} />
+                    <pre>{this.renderPreText()}</pre>
+                </div>
+            );
+        }
+
+    }
+
+
+    const App = () => (
+        <div>
+            <h1>2019年个人所得税计算器</h1>
+            <PitCalc />
+        </div>
+    );
+
+    ReactDOM.render(
+        <App />,
+        document.getElementById('root')
+    );
+
+</script>
+
+
+
+</body>
+
+</html>
+
