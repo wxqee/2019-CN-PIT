@@ -58,7 +58,7 @@ class UserSalaryForm extends React.Component {
                         <input className="form-control" type="number" name="MonthlySixSpecialDeducted" step="0.01" placeholder="6大项等专项扣除" defaultValue="1000" />
                     </div>
 
-                    <button type="submit" class="btn btn-primary">计算</button>
+                    <button type="submit" className="btn btn-primary">计算</button>
                 </fieldset>
             </form>
         );

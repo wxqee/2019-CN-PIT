@@ -68,7 +68,7 @@ class PitCalc extends React.Component {
                 <tbody>
                 {
                     result.map(({ month, pit, level }) => (
-                        <tr>
+                        <tr key={month}>
                             <th scope="row">{month}</th>
                             <td>{pit}</td>
                             <td><kbd>{level}</kbd></td>
