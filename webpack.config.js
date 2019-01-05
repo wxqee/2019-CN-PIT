@@ -5,7 +5,6 @@ const CleanWebpackPlugin = require('clean-webpack-plugin');
 module.exports = {
     entry: {
         main: './src/app.jsx',
-        vendor: ['react', 'react-dom', 'jquery'],
     },
     output: {
         filename: '[name].bundle.js',
