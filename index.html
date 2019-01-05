@@ -112,6 +112,8 @@
 
         moneyMonthlySixSpecialDeducted = 0;
 
+        result = null;
+
         constructor(form, moneyMonthlySalary, moneyMonthlySpecialDeducted, moneyMonthlySixSpecialDeducted) {
             this.pitForm = form;
             this.moneyMonthlySalary = moneyMonthlySalary;
@@ -125,20 +127,30 @@
         }
 
         pitByMonth(month) {
+            if (!this.result) {
+                this.result = {};
+            }
+
+            if (this.result[month]) {
+                return this.result[month];
+            }
+
             const n1 = this.n1ByMonth(month);
             const { rate, quickCalculateDeducting } = this.pitForm.getLevelMeta(n1);
             const pitHistoryAmount = [...Array(month - 1).keys()]
                 .map(m => m + 1)
                 .reduce((amount, m) => amount + this.pitByMonth(m), 0);
+            const pit = n1 * rate - quickCalculateDeducting - pitHistoryAmount;
 
-            console.log(`[${month}] rate => ${rate}`);
-            console.log(`[${month}] quickCalculateDeducting => ${quickCalculateDeducting}`);
-            console.log(`[${month}] pitHistoryAmount => ${pitHistoryAmount}`);
+            console.log(`[${month}] ${pit} = ${n1} * ${rate} - ${quickCalculateDeducting} - ${pitHistoryAmount}`);
 
-            return n1 * rate - quickCalculateDeducting - pitHistoryAmount;
+            this.result[month] = pit;
+
+            return pit;
         }
 
         calculate() {
+            this.result = null;
             const months = [...Array(12).keys()].map(m => m + 1);
 
             return months.map(month => ({
