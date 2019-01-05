@@ -112,7 +112,7 @@
 
         moneyMonthlySixSpecialDeducted = 0;
 
-        result = null;
+        pitInfoMap = {}; // init cache
 
         constructor(form, moneyMonthlySalary, moneyMonthlySpecialDeducted, moneyMonthlySixSpecialDeducted) {
             this.pitForm = form;
@@ -126,37 +126,35 @@
             return Number.parseFloat(n1.toFixed(3));
         }
 
-        pitByMonth(month) {
-            if (!this.result) {
-                this.result = {};
-            }
-
-            if (this.result[month]) {
-                return this.result[month];
+        getPitInfoByMonth(month) {
+            if (this.pitInfoMap[month]) {
+                return this.pitInfoMap[month]; // get from cache
             }
 
             const n1 = this.n1ByMonth(month);
-            const { rate, quickCalculateDeducting } = this.pitForm.getLevelMeta(n1);
+            const { rate, quickCalculateDeducting, level } = this.pitForm.getLevelMeta(n1);
             const pitHistoryAmount = [...Array(month - 1).keys()]
                 .map(m => m + 1)
-                .reduce((amount, m) => amount + this.pitByMonth(m), 0);
+                .reduce((amount, m) => amount + this.getPitInfoByMonth(m).pit, 0);
             const pit = n1 * rate - quickCalculateDeducting - pitHistoryAmount;
+            const pitInfo = { pit, level, rate, quickCalculateDeducting };
+            this.pitInfoMap[month] = pitInfo; // save to cache
 
             console.log(`[${month}] ${pit} = ${n1} * ${rate} - ${quickCalculateDeducting} - ${pitHistoryAmount}`);
-
-            this.result[month] = pit;
-
-            return pit;
+            return pitInfo;
         }
 
         calculate() {
-            this.result = null;
+            this.pitInfoMap = {}; // init cache
             const months = [...Array(12).keys()].map(m => m + 1);
-
-            return months.map(month => ({
-                month,
-                pit: Number.parseFloat(this.pitByMonth(month).toFixed(2)),
-            }));
+            return months.map(month => {
+                const pitInfo = this.getPitInfoByMonth(month);
+                return {
+                    month,
+                    ...pitInfo,
+                    pit: Number.parseFloat(pitInfo.pit.toFixed(2)),
+                };
+            });
         }
     }
 
@@ -283,14 +281,16 @@
                         <tr>
                             <th scope="col">月份</th>
                             <th scope="col">应缴税</th>
+                            <th scope="col">等级</th>
                         </tr>
                     </thead>
                     <tbody>
                         {
-                            result.map(({ month, pit }) => (
+                            result.map(({ month, pit, level }) => (
                                 <tr>
                                     <th scope="row">{month}</th>
                                     <td>{pit}</td>
+                                    <td><kbd>{level}</kbd></td>
                                 </tr>
                             ))
                         }
