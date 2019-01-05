@@ -7,7 +7,7 @@ module.exports = {
         main: './src/app.jsx',
     },
     output: {
-        filename: '[name].bundle.js',
+        filename: '[name].[hash].js',
         path: path.resolve(__dirname, 'docs'),
     },
     devServer: {
