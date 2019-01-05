@@ -6,7 +6,7 @@
 ### Mac
 
 ```text
-$ (cd dist/; open index.html)
+$ (cd docs/; open index.html)
 ```
 
 ### 其他
