@@ -31,7 +31,7 @@ module.exports = {
     plugins: [
         new CleanWebpackPlugin(['docs']),
         new HtmlWebpackPlugin({
-            title: 'Development',
+            title: '2019年个人所得税计算器',
             template: './index.html',
         })
     ],
