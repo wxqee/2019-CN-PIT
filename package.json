@@ -8,6 +8,11 @@
     "start": "webpack-dev-server --open --config webpack.dev.js",
     "test": "jest"
   },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run build"
+    }
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/wxqee/2019-CN-PIT.git"
@@ -38,6 +43,7 @@
     "clean-webpack-plugin": "^1.0.0",
     "html-webpack-plugin": "^3.2.0",
     "html-webpack-template": "^6.2.0",
+    "husky": "^1.3.1",
     "jest": "^23.6.0",
     "regenerator-runtime": "^0.13.1",
     "webpack-cli": "^3.2.0",
